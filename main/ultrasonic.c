@@ -159,31 +159,6 @@ esp_err_t ultrasonic_measure_cm(const ultrasonic_sensor_t *dev, uint32_t max_dis
     return ESP_OK;
 }
 
-/*void ultrasonic_test(void *pvParameters)
-{
-    ultrasonic_sensor_t sensor_FWD = {
-        .trigger_pin = TRIGGER_GPIO_FWD,
-        .echo_pin = ECHO_GPIO_FWD
-    };
-
-    ultrasonic_sensor_t sensor_LEFT = {
-        .trigger_pin = TRIGGER_GPIO_LEFT,
-        .echo_pin = ECHO_GPIO_LEFT
-    };
-
-    ultrasonic_sensor_t sensor_RIGHT = {
-        .trigger_pin = TRIGGER_GPIO_RIGHT,
-        .echo_pin = ECHO_GPIO_RIGHT
-    };
-
-    ultrasonic_init(&sensor_FWD );
-    ultrasonic_init(&sensor_LEFT);
-    ultrasonic_init(&sensor_RIGHT );
-
-}*/
-
-
-
 float distance_FWD()
     {
         ultrasonic_sensor_t sensor_FWD = {

@@ -39,6 +39,7 @@
 #include <rcl/rcl.h>
 #include <rcl/error_handling.h>
 #include <std_msgs/msg/int32.h>
+#include <std_msgs/msg/float32.h>
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
 #include <rmw_microros/rmw_microros.h>
@@ -50,6 +51,7 @@
 #include <geometry_msgs/msg/twist.h>
 #include <driver/ledc.h>
 #include "l293_driver.c"
+#include "isr.c"
 
 
 //static const char *TAG = "main_app";
@@ -76,23 +78,27 @@
 
 
 //rcl_publisher_t publisher;
-rcl_publisher_t led_state_publisher;
+rcl_publisher_t left_limit_state;
+rcl_publisher_t right_limit_state;
 rcl_publisher_t fwd_distance_publisher;
 rcl_publisher_t left_distance_publisher;
 rcl_publisher_t right_distance_publisher;
-rcl_subscription_t led_input_subscriber;
+//rcl_subscription_t led_input_subscriber;
 rcl_subscription_t cmd_vel_subscriber;
 
 //rcl_publisher_t publisher;
 //std_msgs__msg__Int32 msg;
 
 
-std_msgs__msg__Int32 LedStateMsg;
-std_msgs__msg__Int32 LedInputMsg;
-std_msgs__msg__Int32 FwdDistanceMsg;
-std_msgs__msg__Int32 LeftDistanceMsg;
-std_msgs__msg__Int32 RightDistanceMsg;
+int LeftLimitStateMsg;
+int  RightLimitStateMsg;
+//std_msgs__msg__Int32 LeftLimitStateMsg;
+//std_msgs__msg__Int32 RightLimitStateMsg;
+std_msgs__msg__Float32 FwdDistanceMsg;
+std_msgs__msg__Float32 LeftDistanceMsg;
+std_msgs__msg__Float32 RightDistanceMsg;
 geometry_msgs__msg__Twist msg;
+
 
 
 float fmap(float val, float in_min, float in_max, float out_min, float out_max);
@@ -121,7 +127,13 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
 		RCSOFTCHECK(rcl_publish(&left_distance_publisher, &LeftDistanceMsg, NULL));
 		RightDistanceMsg.data = 100*distance_RIGHT();
 		RCSOFTCHECK(rcl_publish(&right_distance_publisher, &RightDistanceMsg, NULL));
+		LeftLimitStateMsg = left_limit_switch();
+		RCSOFTCHECK(rcl_publish(&left_limit_state, &LeftLimitStateMsg, NULL));
+		RightLimitStateMsg = right_limit_switch();
+		RCSOFTCHECK(rcl_publish(&right_limit_state, &RightLimitStateMsg, NULL));
+
 		printf("ultrasound data sent\n");
+		printf("left limit state %d,  right limit state%d\n", LeftLimitStateMsg, RightLimitStateMsg);
 		//LedStateMsg.data++;
 	}
 
@@ -185,45 +197,53 @@ void micro_ros_task(void * arg)
 
 	// create node
 	rcl_node_t node;
-	RCCHECK(rclc_node_init_default(&node, "blink_on_input", "", &support));
+	RCCHECK(rclc_node_init_default(&node, "Chappy", "", &support));
 
 	// create publisher
-	/*RCCHECK(rclc_publisher_init_default(
-		&led_state_publisher,
+	RCCHECK(rclc_publisher_init_default(
+		&left_limit_state,
 		&node,
 		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
-		"led_state"));*/
+		"left_limit_state"));
+
+	// create publisher
+	RCCHECK(rclc_publisher_init_default(
+		&right_limit_state,
+		&node,
+		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
+		"right_limit_state"));
+
 
     // create led_state publisher
 	RCCHECK(rclc_publisher_init_default(
 		&fwd_distance_publisher,
 		&node,
-		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
+		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32),
 		"fwd_distance"));
 
       // create led_state publisher
 	RCCHECK(rclc_publisher_init_default(
 		&left_distance_publisher,
 		&node,
-		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "left_distance"));
+		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "left_distance"));
 
     // create led_state publisher
 	RCCHECK(rclc_publisher_init_default(
 		&right_distance_publisher,
 		&node,
-		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "right_distance"));
+		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "right_distance"));
 	
-		// create subscriber 
+		/*// create subscriber 
 	RCCHECK(rclc_subscription_init_default(
 		&led_input_subscriber,
 		&node,
 		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
-		"led_input"));
+		"led_input"));*/
 	
 	  // create subscriber
-    rcl_subscription_t subscriber;
+    //rcl_subscription_t cmd_vel_subscriber;
     RCCHECK(rclc_subscription_init_default(
-        &subscriber,
+        &cmd_vel_subscriber,
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
         "/cmd_vel"));
@@ -239,11 +259,12 @@ void micro_ros_task(void * arg)
 
 	// create executor
 	rclc_executor_t executor;
-	RCCHECK(rclc_executor_init(&executor, &support.context, 3, &allocator));
+	RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator));
 	RCCHECK(rclc_executor_add_timer(&executor, &timer));
-	RCCHECK(rclc_executor_add_subscription(&executor, &led_input_subscriber,&LedInputMsg,
-		&subscription_callback, ON_NEW_DATA));
-	RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &cmd_vel_callback, ON_NEW_DATA));
+	//RCCHECK(rclc_executor_add_subscription(&executor, &led_input_subscriber,&LedInputMsg,
+		//&subscription_callback, ON_NEW_DATA));
+	RCCHECK(rclc_executor_add_subscription(&executor, &cmd_vel_subscriber, &msg, &cmd_vel_callback, ON_NEW_DATA));
+    
 
 	//msg.data = 0;
 
@@ -253,12 +274,13 @@ void micro_ros_task(void * arg)
 	}
 
 	// free resources
-	RCCHECK(rcl_publisher_fini(&led_state_publisher, &node));
+	RCCHECK(rcl_publisher_fini(&left_limit_state, &node));
+	RCCHECK(rcl_publisher_fini(&right_limit_state, &node));
     RCCHECK(rcl_publisher_fini(&fwd_distance_publisher, &node));
     RCCHECK(rcl_publisher_fini(&left_distance_publisher, &node));
 	RCCHECK(rcl_publisher_fini(&right_distance_publisher, &node));
-	RCCHECK(rcl_subscription_fini(&led_input_subscriber, &node));
-	RCCHECK(rcl_subscription_fini(&subscriber, &node));
+	//RCCHECK(rcl_subscription_fini(&led_input_subscriber, &node));
+	RCCHECK(rcl_subscription_fini(&cmd_vel_subscriber, &node));
 	RCCHECK(rcl_node_fini(&node));
 
   	vTaskDelete(NULL);
@@ -297,7 +319,12 @@ hcsr_setup_pins();
             NULL,
             CONFIG_MICRO_ROS_APP_TASK_PRIO, 
             NULL); 
+	
+
 }
+
+
+
 
 
 
