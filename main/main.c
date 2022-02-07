@@ -250,7 +250,7 @@ void micro_ros_task(void * arg)
 
 	// create timer,
 	rcl_timer_t timer;
-	const unsigned int timer_timeout = 600;
+	const unsigned int timer_timeout = 300;
 	RCCHECK(rclc_timer_init_default(
 		&timer,
 		&support,
@@ -270,7 +270,7 @@ void micro_ros_task(void * arg)
 
 	while(1){
 		rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10));
-		usleep(10000);
+		usleep(1000);
 	}
 
 	// free resources

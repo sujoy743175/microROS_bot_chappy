@@ -45,8 +45,8 @@ static const char *TAG = "hc-sr04_driver";
 //#define LED_BUILTIN 33
 #define PIN_LEFT_FORWARD 26
 #define PIN_LEFT_BACKWARD 27
-#define PIN_RIGHT_FORWARD 12
-#define PIN_RIGHT_BACKWARD 14
+#define PIN_RIGHT_FORWARD 14
+#define PIN_RIGHT_BACKWARD 25
 
 // PWM Channels (Reserve channel 0 and 1 for camera)
 #define PWM_LEFT_FORWARD LEDC_CHANNEL_2
