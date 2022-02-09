@@ -10,7 +10,7 @@
 #define RIGHT_LIMIT_GPIO GPIO_NUM_15
 
 
-int left_limit_switch()
+void left_limit_switch()
 {
   //Configure button
   gpio_config_t left_limit;
@@ -23,11 +23,16 @@ int left_limit_switch()
 
   printf("Left limit pin configured\n");
 
-  int left_limit_state = gpio_get_level(LEFT_LIMIT_GPIO);
-  return left_limit_state;  
 }
 
-int right_limit_switch()
+int get_left_limit_state(){
+  int left_limit_state = gpio_get_level(LEFT_LIMIT_GPIO);
+  return left_limit_state; 
+
+}
+
+
+void right_limit_switch()
 {
     //Configure button
   gpio_config_t right_limit;
@@ -37,10 +42,14 @@ int right_limit_switch()
   right_limit.pull_up_en = GPIO_PULLUP_ENABLE; 	//Disable pullup DISABLE
   right_limit.pull_down_en = GPIO_PULLDOWN_DISABLE; //Enable pulldown ENABLE
   gpio_config(&right_limit);
-  printf("Right limit pin configured\n");
+  printf("Right limit pin configured\n"); 
+}
 
+
+int get_right_limit_state(){
   int right_limit_state = gpio_get_level(RIGHT_LIMIT_GPIO);
-  return right_limit_state;  
+  return right_limit_state; 
+
 }
 
 

@@ -127,9 +127,9 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
 		RCSOFTCHECK(rcl_publish(&left_distance_publisher, &LeftDistanceMsg, NULL));
 		RightDistanceMsg.data = 100*distance_RIGHT();
 		RCSOFTCHECK(rcl_publish(&right_distance_publisher, &RightDistanceMsg, NULL));
-		LeftLimitStateMsg = left_limit_switch();
+		LeftLimitStateMsg = get_left_limit_state();
 		RCSOFTCHECK(rcl_publish(&left_limit_state, &LeftLimitStateMsg, NULL));
-		RightLimitStateMsg = right_limit_switch();
+		RightLimitStateMsg = get_right_limit_state();
 		RCSOFTCHECK(rcl_publish(&right_limit_state, &RightLimitStateMsg, NULL));
 
 		printf("ultrasound data sent\n");
@@ -250,7 +250,7 @@ void micro_ros_task(void * arg)
 
 	// create timer,
 	rcl_timer_t timer;
-	const unsigned int timer_timeout = 300;
+	const unsigned int timer_timeout = 400;
 	RCCHECK(rclc_timer_init_default(
 		&timer,
 		&support,
@@ -303,9 +303,12 @@ void cmd_vel_callback(const void *msgin) {
 
 
 
-void app_main(void)
-{   
-hcsr_setup_pins();
+void app_main(void){   
+
+	motor_pin_setup();
+	left_limit_switch();
+	right_limit_switch();
+
 
 #ifdef UCLIENT_PROFILE_UDP
     // Start the networking if required
