@@ -83,6 +83,7 @@ rcl_publisher_t right_limit_state;
 rcl_publisher_t fwd_distance_publisher;
 rcl_publisher_t left_distance_publisher;
 rcl_publisher_t right_distance_publisher;
+rcl_publisher_t	stop_or_move_publisher;
 //rcl_subscription_t led_input_subscriber;
 rcl_subscription_t cmd_vel_subscriber;
 
@@ -91,12 +92,14 @@ rcl_subscription_t cmd_vel_subscriber;
 
 
 int LeftLimitStateMsg;
-int  RightLimitStateMsg;
+int RightLimitStateMsg;
+int	StopOrMoveMsg;
 //std_msgs__msg__Int32 LeftLimitStateMsg;
 //std_msgs__msg__Int32 RightLimitStateMsg;
 std_msgs__msg__Float32 FwdDistanceMsg;
 std_msgs__msg__Float32 LeftDistanceMsg;
 std_msgs__msg__Float32 RightDistanceMsg;
+//std_msgs__msg__Float32 StopOrMoveMsg;
 geometry_msgs__msg__Twist msg;
 
 
@@ -121,6 +124,10 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
 
     	//LedStateMsg.data = gpio_get_level(LED_BUILTIN);
 		//RCSOFTCHECK(rcl_publish(&led_state_publisher, &LedStateMsg, NULL));
+
+		StopOrMoveMsg = get_right_encoder_state();
+		RCSOFTCHECK(rcl_publish(&stop_or_move_publisher, &StopOrMoveMsg, NULL));
+
 		FwdDistanceMsg.data = 100*distance_FWD();
 		RCSOFTCHECK(rcl_publish(&fwd_distance_publisher, &FwdDistanceMsg, NULL));
 		LeftDistanceMsg.data = 100*distance_LEFT();
@@ -133,7 +140,7 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
 		RCSOFTCHECK(rcl_publish(&right_limit_state, &RightLimitStateMsg, NULL));
 
 		printf("ultrasound data sent\n");
-		printf("left limit state %d,  right limit state%d\n", LeftLimitStateMsg, RightLimitStateMsg);
+		printf("left limit state %d,  right limit state%d, left encoder state%d\n", LeftLimitStateMsg, RightLimitStateMsg, StopOrMoveMsg);
 		//LedStateMsg.data++;
 	}
 
@@ -198,6 +205,13 @@ void micro_ros_task(void * arg)
 	// create node
 	rcl_node_t node;
 	RCCHECK(rclc_node_init_default(&node, "Chappy", "", &support));
+
+	// create publisher
+	RCCHECK(rclc_publisher_init_default(
+		&stop_or_move_publisher,
+		&node,
+		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
+		"stop_or_move"));
 
 	// create publisher
 	RCCHECK(rclc_publisher_init_default(
@@ -270,10 +284,11 @@ void micro_ros_task(void * arg)
 
 	while(1){
 		rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10));
-		usleep(1000);
+		usleep(10000);
 	}
 
 	// free resources
+	RCCHECK(rcl_publisher_fini(&stop_or_move_publisher, &node));
 	RCCHECK(rcl_publisher_fini(&left_limit_state, &node));
 	RCCHECK(rcl_publisher_fini(&right_limit_state, &node));
     RCCHECK(rcl_publisher_fini(&fwd_distance_publisher, &node));
@@ -308,6 +323,8 @@ void app_main(void){
 	motor_pin_setup();
 	left_limit_switch();
 	right_limit_switch();
+	left_encoder();
+	right_encoder();
 
 
 #ifdef UCLIENT_PROFILE_UDP

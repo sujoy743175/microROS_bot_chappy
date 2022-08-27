@@ -9,6 +9,61 @@
 #define LEFT_LIMIT_GPIO GPIO_NUM_19
 #define RIGHT_LIMIT_GPIO GPIO_NUM_15
 
+#define LEFT_ENCODER_GPIO GPIO_NUM_34
+#define RIGHT_ENCODER_GPIO GPIO_NUM_12
+
+
+
+void left_encoder()
+{
+  //Configure button
+  gpio_config_t left_encoder;
+  left_encoder.intr_type = GPIO_INTR_ANYEDGE; 	//Enable interrupt on both rising and falling edges
+  left_encoder.mode = GPIO_MODE_INPUT;        	//Set as Input
+  left_encoder.pin_bit_mask = (1 << LEFT_ENCODER_GPIO ); //Bitmask
+  left_encoder.pull_up_en = GPIO_PULLUP_ENABLE; 	//Disable pullup DISABLE
+  left_encoder.pull_down_en = GPIO_PULLDOWN_DISABLE; //Enable pulldown ENABLE
+  gpio_config(&left_encoder);
+
+  printf("left_encoder pin configured\n");
+
+}
+
+int get_left_encoder_state(){
+  int left_encoder_state = gpio_get_level(LEFT_ENCODER_GPIO);
+  return left_encoder_state; 
+
+}
+
+
+void right_encoder()
+{
+  //Configure button
+  gpio_config_t right_encoder;
+  right_encoder.intr_type = GPIO_INTR_ANYEDGE; 	//Enable interrupt on both rising and falling edges
+  right_encoder.mode = GPIO_MODE_INPUT;        	//Set as Input
+  right_encoder.pin_bit_mask = (1 << RIGHT_ENCODER_GPIO ); //Bitmask
+  right_encoder.pull_up_en = GPIO_PULLUP_ENABLE; 	//Disable pullup DISABLE
+  right_encoder.pull_down_en = GPIO_PULLDOWN_DISABLE; //Enable pulldown ENABLE
+  gpio_config(&right_encoder);
+
+  printf("right_encoder pin configured\n");
+
+}
+
+int get_right_encoder_state(){
+  int right_encoder_state = gpio_get_level(RIGHT_ENCODER_GPIO);
+  return right_encoder_state; 
+
+}
+
+
+
+
+
+
+
+
 
 void left_limit_switch()
 {
